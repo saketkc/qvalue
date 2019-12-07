@@ -17,7 +17,7 @@ def estimate(pv, m=None, verbose=False, lowmem=False, pi0=None):
          1
 
     """
-    assert(pv.min() >= 0 and pv.max() <= 1), "p-values should be between 0 and 1"
+    assert pv.min() >= 0 and pv.max() <= 1, "p-values should be between 0 and 1"
 
     original_shape = pv.shape
     pv = pv.ravel()  # flattens the array in place, more efficient than flatten()
@@ -39,7 +39,7 @@ def estimate(pv, m=None, verbose=False, lowmem=False, pi0=None):
         lam = sp.arange(0, 0.90, 0.01)
         counts = sp.array([(pv > i).sum() for i in sp.arange(0, 0.9, 0.01)])
         for l in range(len(lam)):
-            pi0.append(counts[l]/(m*(1-lam[l])))
+            pi0.append(counts[l] / (m * (1 - lam[l])))
 
         pi0 = sp.array(pi0)
 
@@ -51,21 +51,23 @@ def estimate(pv, m=None, verbose=False, lowmem=False, pi0=None):
 
         if pi0 > 1:
             if verbose:
-                print("got pi0 > 1 (%.3f) while estimating qvalues, setting it to 1" % pi0)
+                print(
+                    "got pi0 > 1 (%.3f) while estimating qvalues, setting it to 1" % pi0
+                )
             pi0 = 1.0
 
-    assert(pi0 >= 0 and pi0 <= 1), "pi0 is not between 0 and 1: %f" % pi0
+    assert pi0 >= 0 and pi0 <= 1, "pi0 is not between 0 and 1: %f" % pi0
 
     if lowmem:
         # low memory version, only uses 1 pv and 1 qv matrices
         qv = sp.zeros((len(pv),))
         last_pv = pv.argmax()
-        qv[last_pv] = (pi0*pv[last_pv]*m)/float(m)
+        qv[last_pv] = (pi0 * pv[last_pv] * m) / float(m)
         pv[last_pv] = -sp.inf
         prev_qv = last_pv
-        for i in xrange(int(len(pv))-2, -1, -1):
+        for i in range(int(len(pv)) - 2, -1, -1):
             cur_max = pv.argmax()
-            qv_i = (pi0*m*pv[cur_max]/float(i+1))
+            qv_i = pi0 * m * pv[cur_max] / float(i + 1)
             pv[cur_max] = -sp.inf
             qv_i1 = prev_qv
             qv[cur_max] = min(qv_i, qv_i1)
@@ -74,11 +76,11 @@ def estimate(pv, m=None, verbose=False, lowmem=False, pi0=None):
     else:
         p_ordered = sp.argsort(pv)
         pv = pv[p_ordered]
-        qv = pi0 * m/len(pv) * pv
+        qv = pi0 * m / len(pv) * pv
         qv[-1] = min(qv[-1], 1.0)
 
-        for i in xrange(len(pv)-2, -1, -1):
-            qv[i] = min(pi0*m*pv[i]/(i+1.0), qv[i+1])
+        for i in range(len(pv) - 2, -1, -1):
+            qv[i] = min(pi0 * m * pv[i] / (i + 1.0), qv[i + 1])
 
         # reorder qvalues
         qv_temp = qv.copy()
